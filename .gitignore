@@ -3,3 +3,4 @@
 .debmake
 _
 obj
+.DS_Store
