@@ -1,9 +1,14 @@
-Package: iconrenamer
-Priority: optional
-Section: System
+Package: com.rpetrich.iconrenamer
+Section: Tweaks
+Maintainer: BigBoss <bigboss@thebigboss.org>
 Architecture: iphoneos-arm
-Version: 0.1
+Version: 1.0
+Depends: firmware (>= 4.0), mobilesubstrate
 Description: Rename icons from your SpringBoard
 Name: Icon Renamer
-Depends: firmware (>= 4.0)
+Homepage: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=iconrenamerData
+Depiction: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=iconrenamerData
 Author: Ryan Petrich <rpetrich@gmail.com>
+Sponsor: thebigboss.org <http://thebigboss.org>
+dev: rpetrich
+Tag: purpose::extension
