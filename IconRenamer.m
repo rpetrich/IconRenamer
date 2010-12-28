@@ -114,11 +114,28 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesMoved, NSSet *, touc
 	CHSuper(2, SBApplicationIcon, touchesMoved, touches, withEvent, event);
 }
 
+static NSTimeInterval lastTapTime;
+
 CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
 {
-	if (inTap)
-		[[IconRenamer renamerWithIcon:self] show];
+	if (inTap) {
+		if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
+			UITouch *touch = [touches anyObject];
+			NSTimeInterval currentTapTime = touch.timestamp;
+			if (currentTapTime - lastTapTime < 0.5)
+				[[IconRenamer renamerWithIcon:self] show];
+			lastTapTime = currentTapTime;
+		} else {
+			[[IconRenamer renamerWithIcon:self] show];
+		}
+	}
 	CHSuper(2, SBApplicationIcon, touchesEnded, touches, withEvent, event);
+}
+
+static void LoadSettings()
+{
+	[iconMappings release];
+	iconMappings = [[NSMutableDictionary alloc] initWithContentsOfFile:@kSettingsFilePath] ?: [[NSMutableDictionary alloc] init];
 }
 
 CHConstructor {
@@ -129,5 +146,6 @@ CHConstructor {
 	CHHook(2, SBApplicationIcon, touchesEnded, withEvent);
 	CHLoadLateClass(SBIconController);
 	CHAutoreleasePoolForScope();
-	iconMappings = [[NSMutableDictionary alloc] initWithContentsOfFile:@kSettingsFilePath] ?: [[NSMutableDictionary alloc] init];
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)LoadSettings, CFSTR("ch.rpetri.iconrenamer/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+	LoadSettings();
 }

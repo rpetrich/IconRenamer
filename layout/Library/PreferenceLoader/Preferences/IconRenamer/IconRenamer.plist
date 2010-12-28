@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>title</key>
+	<string>IconRenamer</string>
+	<key>entry</key>
+	<dict>
+		<key>cell</key>
+		<string>PSLinkCell</string>
+		<key>icon</key>
+		<string>/Library/PreferenceLoader/Preferences/IconRenamer/IconRenamer.png</string>
+		<key>label</key>
+		<string>IconRenamer</string>
+	</dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>ch.rpetri.iconrenamer</string>
+			<key>key</key>
+			<string>IRRequiresDoubleTap</string>
+			<key>label</key>
+			<string>Require Double Tap</string>
+			<key>PostNotification</key>
+			<string>ch.rpetri.iconrenamer/settingschanged</string>
+		</dict>
+	</array>
+</dict>
+</plist>
