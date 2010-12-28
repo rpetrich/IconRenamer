@@ -42,6 +42,7 @@ __attribute__((visibility("hidden")))
 		UITextField *textField = [_av addTextFieldWithValue:[_icon displayName] label:nil];
 		textField.delegate = self;
 		textField.returnKeyType = UIReturnKeyDone;
+		textField.clearButtonMode = UITextFieldViewModeAlways;
 		_av.cancelButtonIndex = [_av addButtonWithTitle:@"Cancel"];
 		[_av addButtonWithTitle:@"Apply"];
 		[_av show];
