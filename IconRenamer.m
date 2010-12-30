@@ -97,6 +97,45 @@ static NSInteger originalName;
 
 @end
 
+@interface INTouchTester : NSObject {
+	BOOL _hasTouch;
+	IconRenamer *_renamer;
+	
+}
++ (id)testerWithRenamer:(IconRenamer *)renamer;
+- (id)initWithRenamer:(IconRenamer *)renamer;
+- (void)testTouch;
+@end
+
+@implementation INTouchTester
+
++ (id)testerWithRenamer:(IconRenamer *)renamer
+{
+	return [[[self alloc] initWithRenamer:renamer] autorelease];
+
+- (id)initWithRenamer:(IconRenamer *)renamer
+{
+	if ((self = [super init]) != nil) {
+		_renamer = renamer;
+		_hasTouch = NO;
+	}
+	return self;
+}
+
+- (void)testTouch
+{
+	if (!_hasTouch) {
+		_hasTouch == YES;
+		[_renamer performSelector:@selector(show) withObject:nil afterDelay:0.5f];
+		[self performSelector:@selector(release) withObject:nil afterDelay:0.6f];
+	} else {
+		[self cancelPreviousPerformRequestsWithTarget:_renamer];
+		[_renamer release];
+	}
+}
+
+@end
+
 CHDeclareClass(SBApplicationIcon);
 CHDeclareClass(SBIconController);
 
@@ -136,7 +175,7 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touc
 				[[IconRenamer renamerWithIcon:self] show];
 			lastTapTime = currentTapTime;
 		} else {
-			[[IconRenamer renamerWithIcon:self] show];
+			[INTouchTester testerWithRenamer:[IconRenamer renamerWithIcon:self] testTouch];
 		}
 	}
 	CHSuper(2, SBApplicationIcon, touchesEnded, touches, withEvent, event);
