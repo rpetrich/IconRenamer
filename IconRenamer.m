@@ -18,6 +18,8 @@ __attribute__((visibility("hidden")))
 }
 @end
 
+static NSInteger originalName;
+
 @implementation IconRenamer
 
 + (id)renamerWithIcon:(SBIcon *)icon
@@ -38,7 +40,10 @@ __attribute__((visibility("hidden")))
 	if (!_av) {
 		_av = [[UIAlertView alloc] init];
 		_av.delegate = self;
-		_av.title = @"Rename Icon";
+		originalName++;
+		NSString *title = [_icon displayName];
+		originalName--;
+		_av.title = [@"Rename " stringByAppendingString:title];
 		UITextField *textField = [_av addTextFieldWithValue:[_icon displayName] label:nil];
 		textField.delegate = self;
 		textField.returnKeyType = UIReturnKeyDone;
@@ -97,7 +102,12 @@ CHDeclareClass(SBIconController);
 
 CHOptimizedMethod(0, self, NSString *, SBApplicationIcon, displayName)
 {
-	return [iconMappings objectForKey:[self leafIdentifier]] ?: CHSuper(0, SBApplicationIcon, displayName);
+	if (originalName == 0) {
+		NSString *title = [iconMappings objectForKey:[self leafIdentifier]];
+		if (title)
+			return title;
+	}
+	return CHSuper(0, SBApplicationIcon, displayName);
 }
 
 static BOOL inTap;
