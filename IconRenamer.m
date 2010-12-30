@@ -17,12 +17,14 @@ __attribute__((visibility("hidden")))
 	UIAlertView *_av;
 	BOOL _hasTouch;
 }
-- (void)testTouch;
+- (void)receiveTouch;
 @end
 
 static NSInteger originalName;
 
 @implementation IconRenamer
+
+static IconRenamer *currentRenamer;
 
 + (id)renamerWithIcon:(SBIcon *)icon
 {
@@ -32,20 +34,19 @@ static NSInteger originalName;
 - (id)initWithIcon:(SBIcon *)icon
 {
 	if ((self = [super init])) {
+		currentRenamer = self;
 		_icon = [icon retain];
-		_hasTouch = NO;
 	}
 	return self;
 }
 
-- (void)testTouch
+- (void)receiveTouch
 {
 	if (!_hasTouch) {
-		_hasTouch == YES;
-		[self performSelector:@selector(show) withObject:nil afterDelay:0.5f];
+		_hasTouch = YES;
+		[self performSelector:@selector(show) withObject:nil afterDelay:0.25];
 	} else {
-		[self cancelPreviousPerformRequestsWithTarget:self];
-		[self release];
+		[NSObject cancelPreviousPerformRequestsWithTarget:self];
 	}
 }
 
@@ -105,6 +106,8 @@ static NSInteger originalName;
 
 - (void)dealloc
 {
+	if (currentRenamer == self)
+		currentRenamer = nil;
 	[_icon release];
 	[super dealloc];
 }
@@ -150,7 +153,7 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touc
 				[[IconRenamer renamerWithIcon:self] show];
 			lastTapTime = currentTapTime;
 		} else {
-			[[IconRenamer renamerWithIcon:self] testTouch];
+			[currentRenamer ?: [IconRenamer renamerWithIcon:self] receiveTouch];
 		}
 	}
 	CHSuper(2, SBApplicationIcon, touchesEnded, touches, withEvent, event);
