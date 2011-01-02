@@ -142,6 +142,7 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesMoved, NSSet *, touc
 }
 
 static NSTimeInterval lastTapTime;
+static SBApplicationIcon *lastTapIcon;
 
 CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
 {
@@ -149,8 +150,10 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touc
 		if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
 			UITouch *touch = [touches anyObject];
 			NSTimeInterval currentTapTime = touch.timestamp;
-			if (currentTapTime - lastTapTime < 0.5)
+			if ((currentTapTime - lastTapTime < 0.5) && (lastTapIcon == self))
 				[[IconRenamer renamerWithIcon:self] show];
+			[lastTapIcon autorelease];
+			lastTapIcon = [self retain];
 			lastTapTime = currentTapTime;
 		} else {
 			[currentRenamer ?: [IconRenamer renamerWithIcon:self] receiveTouch];
