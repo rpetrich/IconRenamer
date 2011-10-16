@@ -1,6 +1,8 @@
 #import <SpringBoard/SpringBoard.h>
 #import <CaptainHook/CaptainHook.h>
 
+#import "SBIconView.h"
+
 @interface SBIcon (OS40)
 - (NSString *)leafIdentifier;
 - (void)updateLabel;
@@ -14,9 +16,11 @@ __attribute__((visibility("hidden")))
 @interface IconRenamer : NSObject <UIAlertViewDelegate, UITextFieldDelegate> {
 @private
 	SBIcon *_icon;
+	SBIconView *_iconView;
 	UIAlertView *_av;
 	BOOL _hasTouch;
 }
+- (id)initWithIcon:(SBIcon *)icon iconView:(SBIconView *)iconView;
 - (void)receiveTouch;
 @end
 
@@ -26,16 +30,17 @@ static NSInteger originalName;
 
 static IconRenamer *currentRenamer;
 
-+ (id)renamerWithIcon:(SBIcon *)icon
++ (id)renamerWithIcon:(SBIcon *)icon iconView:(SBIconView *)iconView
 {
-	return [[[self alloc] initWithIcon:icon] autorelease];
+	return [[[self alloc] initWithIcon:icon iconView:iconView] autorelease];
 }
 
-- (id)initWithIcon:(SBIcon *)icon
+- (id)initWithIcon:(SBIcon *)icon iconView:(SBIconView *)iconView
 {
 	if ((self = [super init])) {
 		currentRenamer = self;
 		_icon = [icon retain];
+		_iconView = [iconView retain];
 	}
 	return self;
 }
@@ -77,7 +82,10 @@ static IconRenamer *currentRenamer;
 	if (![[_icon displayName] isEqualToString:newDisplayName]) {
 		[iconMappings setObject:newDisplayName forKey:identifier];
 		[iconMappings writeToFile:@kSettingsFilePath atomically:YES];
-		[_icon updateLabel];
+		if (_iconView)
+			[_iconView updateLabel];
+		else
+			[_icon updateLabel];
 	}
 }
 
@@ -109,6 +117,7 @@ static IconRenamer *currentRenamer;
 	if (currentRenamer == self)
 		currentRenamer = nil;
 	[_icon release];
+	[_iconView release];
 	[super dealloc];
 }
 
@@ -128,6 +137,8 @@ CHOptimizedMethod(0, self, NSString *, SBApplicationIcon, displayName)
 }
 
 static BOOL inTap;
+static NSTimeInterval lastTapTime;
+static SBApplicationIcon *lastTapIcon;
 
 CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesBegan, NSSet *, touches, withEvent, UIEvent *, event)
 {
@@ -141,9 +152,6 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesMoved, NSSet *, touc
 	CHSuper(2, SBApplicationIcon, touchesMoved, touches, withEvent, event);
 }
 
-static NSTimeInterval lastTapTime;
-static SBApplicationIcon *lastTapIcon;
-
 CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
 {
 	if (inTap) {
@@ -151,15 +159,52 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touc
 			UITouch *touch = [touches anyObject];
 			NSTimeInterval currentTapTime = touch.timestamp;
 			if ((currentTapTime - lastTapTime < 0.5) && (lastTapIcon == self))
-				[[IconRenamer renamerWithIcon:self] show];
+				[[IconRenamer renamerWithIcon:self iconView:nil] show];
 			[lastTapIcon autorelease];
 			lastTapIcon = [self retain];
 			lastTapTime = currentTapTime;
 		} else {
-			[currentRenamer ?: [IconRenamer renamerWithIcon:self] receiveTouch];
+			[currentRenamer ?: [IconRenamer renamerWithIcon:self iconView:nil] receiveTouch];
 		}
 	}
 	CHSuper(2, SBApplicationIcon, touchesEnded, touches, withEvent, event);
+}
+
+CHDeclareClass(SBIconView)
+
+static SBIconView *lastTapIconView;
+
+CHOptimizedMethod(2, super, void, SBIconView, touchesBegan, NSSet *, touches, withEvent, UIEvent *, event)
+{
+	inTap = [CHSharedInstance(SBIconController) isEditing];
+	CHSuper(2, SBIconView, touchesBegan, touches, withEvent, event);
+}
+
+CHOptimizedMethod(2, super, void, SBIconView, touchesMoved, NSSet *, touches, withEvent, UIEvent *, event)
+{
+	inTap = NO;
+	CHSuper(2, SBIconView, touchesMoved, touches, withEvent, event);
+}
+
+CHOptimizedMethod(2, super, void, SBIconView, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
+{
+	if (inTap) {
+		SBIcon *icon = self.icon;
+		if ([icon isKindOfClass:CHClass(SBApplicationIcon)]) {
+			if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
+				UITouch *touch = [touches anyObject];
+				NSTimeInterval currentTapTime = touch.timestamp;
+				if ((currentTapTime - lastTapTime < 0.5) && (lastTapIconView == self))
+					[[IconRenamer renamerWithIcon:self.icon iconView:self] show];
+				[lastTapIconView autorelease];
+				lastTapIconView = [self retain];
+				lastTapTime = currentTapTime;
+			} else {
+				[currentRenamer ?: [IconRenamer renamerWithIcon:self.icon iconView:self] receiveTouch];
+			}
+		}
+	}
+	CHSuper(2, SBIconView, touchesEnded, touches, withEvent, event);
 }
 
 static void LoadSettings()
@@ -174,6 +219,10 @@ CHConstructor {
 	CHHook(2, SBApplicationIcon, touchesBegan, withEvent);
 	CHHook(2, SBApplicationIcon, touchesMoved, withEvent);
 	CHHook(2, SBApplicationIcon, touchesEnded, withEvent);
+	CHLoadLateClass(SBIconView);
+	CHHook(2, SBIconView, touchesBegan, withEvent);
+	CHHook(2, SBIconView, touchesMoved, withEvent);
+	CHHook(2, SBIconView, touchesEnded, withEvent);
 	CHLoadLateClass(SBIconController);
 	CHAutoreleasePoolForScope();
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)LoadSettings, CFSTR("ch.rpetri.iconrenamer/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
