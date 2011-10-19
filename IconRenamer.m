@@ -62,7 +62,7 @@ static IconRenamer *currentRenamer;
 		originalName++;
 		NSString *title = [_icon displayName];
 		originalName--;
-        NSBundle * localizedBundle = [[NSBundle alloc] initWithPath:@"/Library/PreferenceLoader/Preferences/IconRenamer/"];
+		NSBundle * localizedBundle = [[NSBundle alloc] initWithPath:@"/Library/PreferenceLoader/Preferences/IconRenamer/"];
 		_av.title = [NSLocalizedStringFromTableInBundle(@"Rename ", @"IconRenamer", localizedBundle, @"Rename ") stringByAppendingString:title];
 		UITextField *textField = [_av addTextFieldWithValue:[_icon displayName] label:nil];
 		textField.delegate = self;
