@@ -172,3 +172,7 @@
 - (void)iconAccessoriesDidUpdate:(id)iconAccessories;
 - (void)iconLaunchEnabledDidChange:(id)iconLaunchEnabled;
 @end
+
+@interface SBIconView (iOS7)
+- (void)_updateLabel;
+@end

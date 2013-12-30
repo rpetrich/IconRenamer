@@ -82,10 +82,14 @@ static IconRenamer *currentRenamer;
 	if (![[_icon displayName] isEqualToString:newDisplayName]) {
 		[iconMappings setObject:newDisplayName forKey:identifier];
 		[iconMappings writeToFile:@kSettingsFilePath atomically:YES];
-		if (_iconView)
-			[_iconView updateLabel];
-		else
+		if (_iconView) {
+			if ([_iconView respondsToSelector:@selector(updateLabel)])
+				[_iconView updateLabel];
+			else
+				[_iconView _updateLabel];
+		} else {
 			[_icon updateLabel];
+		}
 	}
 }
 
