@@ -3,7 +3,7 @@ Section: Tweaks
 Maintainer: BigBoss <bigboss@thebigboss.org>
 Architecture: iphoneos-arm
 Version: 1.2
-Depends: firmware (>= 4.0), mobilesubstrate, preferenceloader (>= 2.0)
+Depends: firmware (>= 4.0), mobilesubstrate (>= 0.9.5000), preferenceloader (>= 2.2.2)
 Description: Rename icons from your SpringBoard
 Name: Icon Renamer
 Homepage: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=iconrenamerData
