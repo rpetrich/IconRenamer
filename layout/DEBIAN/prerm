@@ -1,0 +1,5 @@
+#!/bin/sh
+if [[ $1 == remove ]]; then
+	rm -f /var/mobile/Library/Preferences/ch.rpetri.iconrenamer.plist
+fi
+exit 0

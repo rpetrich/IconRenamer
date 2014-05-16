@@ -1,6 +1,5 @@
 #import <SpringBoard/SpringBoard.h>
 #import <CaptainHook/CaptainHook.h>
-
 #import "SBIconView.h"
 
 @interface SBIcon (OS40)
@@ -63,13 +62,14 @@ static IconRenamer *currentRenamer;
 		originalName++;
 		NSString *title = [_icon displayName];
 		originalName--;
-		_av.title = [@"Rename " stringByAppendingString:title];
+		NSBundle * localizedBundle = [[NSBundle alloc] initWithPath:@"/Library/PreferenceLoader/Preferences/IconRenamer/"];
+		_av.title = [NSLocalizedStringFromTableInBundle(@"Rename ", @"IconRenamer", localizedBundle, @"Rename ") stringByAppendingString:title];
 		UITextField *textField = [_av addTextFieldWithValue:[_icon displayName] label:nil];
 		textField.delegate = self;
 		textField.returnKeyType = UIReturnKeyDone;
 		textField.clearButtonMode = UITextFieldViewModeAlways;
-		_av.cancelButtonIndex = [_av addButtonWithTitle:@"Cancel"];
-		[_av addButtonWithTitle:@"Apply"];
+		_av.cancelButtonIndex = [_av addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Cancel", @"IconRenamer", localizedBundle, @"Cancel")];
+		[_av addButtonWithTitle:NSLocalizedStringFromTableInBundle(@"Apply", @"IconRenamer", localizedBundle, @"Apply")];
 		[_av show];
 		[self retain];
 	}
