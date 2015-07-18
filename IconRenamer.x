@@ -11,6 +11,14 @@ static NSMutableDictionary *iconMappings;
 
 #define kSettingsFilePath "/var/mobile/Library/Preferences/ch.rpetri.iconrenamer.plist"
 
+static NSString *displayNameForIcon(SBIcon *icon)
+{
+	if ([icon respondsToSelector:@selector(displayNameForLocation:)])
+		return [icon displayNameForLocation:0];
+	else
+		return [icon displayName];
+}
+
 __attribute__((visibility("hidden")))
 @interface IconRenamer : NSObject <UIAlertViewDelegate, UITextFieldDelegate> {
 @private
@@ -60,10 +68,10 @@ static IconRenamer *currentRenamer;
 		_av = [[UIAlertView alloc] init];
 		_av.delegate = self;
 		originalName++;
-		NSString *title = [_icon displayName];
+		NSString *title = displayNameForIcon(_icon);
 		originalName--;
 		_av.title = [@"Rename " stringByAppendingString:title];
-		UITextField *textField = [_av addTextFieldWithValue:[_icon displayName] label:nil];
+		UITextField *textField = [_av addTextFieldWithValue:displayNameForIcon(_icon) label:nil];
 		textField.delegate = self;
 		textField.returnKeyType = UIReturnKeyDone;
 		textField.clearButtonMode = UITextFieldViewModeAlways;
@@ -78,7 +86,7 @@ static IconRenamer *currentRenamer;
 {
 	NSString *identifier = [_icon leafIdentifier];
 	NSString *newDisplayName = [[_av textFieldAtIndex:0] text];
-	if (![[_icon displayName] isEqualToString:newDisplayName]) {
+	if (![displayNameForIcon(_icon) isEqualToString:newDisplayName]) {
 		[iconMappings setObject:newDisplayName forKey:identifier];
 		[iconMappings writeToFile:@kSettingsFilePath atomically:YES];
 		if (_iconView) {
@@ -129,6 +137,16 @@ static IconRenamer *currentRenamer;
 %hook SBApplicationIcon
 
 - (NSString *)displayName
+{
+	if (originalName == 0) {
+		NSString *title = [iconMappings objectForKey:[self leafIdentifier]];
+		if (title)
+			return title;
+	}
+	return %orig();
+}
+
+- (NSString *)displayNameForLocation:(NSInteger)location
 {
 	if (originalName == 0) {
 		NSString *title = [iconMappings objectForKey:[self leafIdentifier]];

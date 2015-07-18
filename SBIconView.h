@@ -1,6 +1,10 @@
 #import <SpringBoard/SpringBoard.h>
 #import <QuartzCore/QuartzCore.h>
 
+@interface SBIcon (iOS83)
+- (NSString *)displayNameForLocation:(NSInteger)location;
+@end
+
 @protocol SBIconObserver
 @optional
 - (void)iconImageDidUpdate:(SBIcon *)icon;
