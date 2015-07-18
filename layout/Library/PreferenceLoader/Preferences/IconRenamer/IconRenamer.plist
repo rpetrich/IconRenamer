@@ -18,6 +18,8 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>© 2010-2015 Ryan Petrich</string>
 		</dict>
 		<dict>
 			<key>cell</key>
