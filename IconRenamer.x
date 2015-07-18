@@ -1,5 +1,4 @@
 #import <SpringBoard/SpringBoard.h>
-#import <CaptainHook/CaptainHook.h>
 
 #import "SBIconView.h"
 
@@ -127,36 +126,35 @@ static IconRenamer *currentRenamer;
 
 @end
 
-CHDeclareClass(SBApplicationIcon);
-CHDeclareClass(SBIconController);
+%hook SBApplicationIcon
 
-CHOptimizedMethod(0, self, NSString *, SBApplicationIcon, displayName)
+- (NSString *)displayName
 {
 	if (originalName == 0) {
 		NSString *title = [iconMappings objectForKey:[self leafIdentifier]];
 		if (title)
 			return title;
 	}
-	return CHSuper(0, SBApplicationIcon, displayName);
+	return %orig();
 }
 
 static BOOL inTap;
 static NSTimeInterval lastTapTime;
 static SBApplicationIcon *lastTapIcon;
 
-CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesBegan, NSSet *, touches, withEvent, UIEvent *, event)
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	inTap = [CHSharedInstance(SBIconController) isEditing];
-	CHSuper(2, SBApplicationIcon, touchesBegan, touches, withEvent, event);
+	inTap = [(SBIconController *)[%c(SBIconController) sharedInstance] isEditing];
+	%orig();
 }
 
-CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesMoved, NSSet *, touches, withEvent, UIEvent *, event)
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	inTap = NO;
-	CHSuper(2, SBApplicationIcon, touchesMoved, touches, withEvent, event);
+	%orig();
 }
 
-CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	if (inTap) {
 		if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
@@ -171,30 +169,32 @@ CHOptimizedMethod(2, super, void, SBApplicationIcon, touchesEnded, NSSet *, touc
 			[currentRenamer ?: [IconRenamer renamerWithIcon:self iconView:nil] receiveTouch];
 		}
 	}
-	CHSuper(2, SBApplicationIcon, touchesEnded, touches, withEvent, event);
+	%orig();
 }
 
-CHDeclareClass(SBIconView)
+%end
 
 static SBIconView *lastTapIconView;
 
-CHOptimizedMethod(2, super, void, SBIconView, touchesBegan, NSSet *, touches, withEvent, UIEvent *, event)
+%hook SBIconView
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-	inTap = [CHSharedInstance(SBIconController) isEditing];
-	CHSuper(2, SBIconView, touchesBegan, touches, withEvent, event);
+	inTap = [(SBIconController *)[%c(SBIconController) sharedInstance] isEditing];
+	%orig();
 }
 
-CHOptimizedMethod(2, super, void, SBIconView, touchesMoved, NSSet *, touches, withEvent, UIEvent *, event)
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	inTap = NO;
-	CHSuper(2, SBIconView, touchesMoved, touches, withEvent, event);
+	%orig();
 }
 
-CHOptimizedMethod(2, super, void, SBIconView, touchesEnded, NSSet *, touches, withEvent, UIEvent *, event)
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	if (inTap) {
 		SBIcon *icon = self.icon;
-		if ([icon isKindOfClass:CHClass(SBApplicationIcon)]) {
+		if ([icon isKindOfClass:%c(SBApplicationIcon)]) {
 			if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
 				UITouch *touch = [touches anyObject];
 				NSTimeInterval currentTapTime = touch.timestamp;
@@ -208,8 +208,10 @@ CHOptimizedMethod(2, super, void, SBIconView, touchesEnded, NSSet *, touches, wi
 			}
 		}
 	}
-	CHSuper(2, SBIconView, touchesEnded, touches, withEvent, event);
+	%orig();
 }
+
+%end
 
 static void LoadSettings()
 {
@@ -217,18 +219,11 @@ static void LoadSettings()
 	iconMappings = [[NSMutableDictionary alloc] initWithContentsOfFile:@kSettingsFilePath] ?: [[NSMutableDictionary alloc] init];
 }
 
-CHConstructor {
-	CHLoadLateClass(SBApplicationIcon);
-	CHHook(0, SBApplicationIcon, displayName);
-	CHHook(2, SBApplicationIcon, touchesBegan, withEvent);
-	CHHook(2, SBApplicationIcon, touchesMoved, withEvent);
-	CHHook(2, SBApplicationIcon, touchesEnded, withEvent);
-	CHLoadLateClass(SBIconView);
-	CHHook(2, SBIconView, touchesBegan, withEvent);
-	CHHook(2, SBIconView, touchesMoved, withEvent);
-	CHHook(2, SBIconView, touchesEnded, withEvent);
-	CHLoadLateClass(SBIconController);
-	CHAutoreleasePoolForScope();
+%ctor
+{
+	%init();
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)LoadSettings, CFSTR("ch.rpetri.iconrenamer/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	LoadSettings();
+	[pool drain];
 }
