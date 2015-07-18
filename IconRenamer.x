@@ -7,8 +7,9 @@
 - (void)updateLabel;
 @end
 
-static NSMutableDictionary *iconMappings;
+static NSDictionary *iconMappings;
 
+#define kSettingsIdentifier "ch.rpetri.iconrenamer"
 #define kSettingsFilePath "/var/mobile/Library/Preferences/ch.rpetri.iconrenamer.plist"
 
 static NSString *displayNameForIcon(SBIcon *icon)
@@ -87,8 +88,15 @@ static IconRenamer *currentRenamer;
 	NSString *identifier = [_icon leafIdentifier];
 	NSString *newDisplayName = [[_av textFieldAtIndex:0] text];
 	if (![displayNameForIcon(_icon) isEqualToString:newDisplayName]) {
-		[iconMappings setObject:newDisplayName forKey:identifier];
-		[iconMappings writeToFile:@kSettingsFilePath atomically:YES];
+		NSMutableDictionary *copy = [iconMappings mutableCopy];
+		[copy setObject:newDisplayName forKey:identifier];
+		[iconMappings release];
+		iconMappings = copy;
+		if (kCFCoreFoundationVersionNumber >= 1000.0) {
+			CFPreferencesSetAppValue((CFStringRef)identifier, (CFStringRef)newDisplayName, CFSTR(kSettingsIdentifier));
+		} else {
+			[copy writeToFile:@kSettingsFilePath atomically:YES];
+		}
 		if (_iconView) {
 			if ([_iconView respondsToSelector:@selector(updateLabel)])
 				[_iconView updateLabel];
@@ -234,7 +242,17 @@ static SBIconView *lastTapIconView;
 static void LoadSettings()
 {
 	[iconMappings release];
-	iconMappings = [[NSMutableDictionary alloc] initWithContentsOfFile:@kSettingsFilePath] ?: [[NSMutableDictionary alloc] init];
+	if (kCFCoreFoundationVersionNumber >= 1000.0) {
+		CFArrayRef keys = CFPreferencesCopyKeyList(CFSTR(kSettingsIdentifier), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		if (keys) {
+			iconMappings = (NSDictionary *)CFPreferencesCopyMultiple(keys, CFSTR(kSettingsIdentifier), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) ?: [[NSDictionary alloc] init];
+			CFRelease(keys);
+		} else {
+			iconMappings = [[NSDictionary alloc] init];
+		}
+	} else {
+		iconMappings = [[NSDictionary alloc] initWithContentsOfFile:@kSettingsFilePath] ?: [[NSDictionary alloc] init];
+	}
 }
 
 %ctor
