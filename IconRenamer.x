@@ -200,6 +200,21 @@ static SBApplicationIcon *lastTapIcon;
 
 %end
 
+__attribute__((visibility("hidden")))
+@interface IconRenamerGestureRecognizerDelegate : NSObject <UIGestureRecognizerDelegate>
+@end
+
+static IconRenamerGestureRecognizerDelegate *recognizerDelegate;
+
+@implementation IconRenamerGestureRecognizerDelegate
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+	return [(SBIconController *)[%c(SBIconController) sharedInstance] isEditing];
+}
+
+@end
+
 @interface SBIconView ()
 - (void)iconRenamerReceivedTap;
 @end
@@ -236,6 +251,7 @@ static void iconViewPressedWithTimestamp(SBIconView *target, CFTimeInterval time
 {
 	if ((self = %orig())) {
 		UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(iconRenamerReceivedTap)];
+		recognizer.delegate = recognizerDelegate;
 		[self addGestureRecognizer:recognizer];
 		[recognizer release];
 	}
@@ -293,6 +309,7 @@ static void LoadSettings()
 	%init();
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	if ([%c(SBIconView) instancesRespondToSelector:@selector(initWithContentType:)]) {
+		recognizerDelegate = [[IconRenamerGestureRecognizerDelegate alloc] init];
 		%init(UsingRecognizer);
 	} else {
 		%init(UsingTouchEvents);
