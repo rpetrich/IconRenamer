@@ -1,6 +1,6 @@
 TWEAK_NAME = IconRenamer
 IconRenamer_FILES = IconRenamer.x
-IconRenamer_FRAMEWORKS = Foundation UIKit
+IconRenamer_FRAMEWORKS = Foundation UIKit QuartzCore
 
 IPHONE_ARCHS = armv6 arm64
 

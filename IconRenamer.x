@@ -200,9 +200,52 @@ static SBApplicationIcon *lastTapIcon;
 
 %end
 
+@interface SBIconView ()
+- (void)iconRenamerReceivedTap;
+@end
+
 static SBIconView *lastTapIconView;
 
+static void iconViewPressedWithTimestamp(SBIconView *target, CFTimeInterval timestamp)
+{
+	SBIcon *icon = target.icon;
+	if ([icon isKindOfClass:%c(SBApplicationIcon)]) {
+		if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
+			if ((timestamp - lastTapTime < 0.5) && (lastTapIconView == target))
+				[[IconRenamer renamerWithIcon:target.icon iconView:target] show];
+			[lastTapIconView autorelease];
+			lastTapIconView = [target retain];
+			lastTapTime = timestamp;
+		} else {
+			[currentRenamer ?: [IconRenamer renamerWithIcon:target.icon iconView:target] receiveTouch];
+		}
+	}
+}
+
 %hook SBIconView
+
+%new
+- (void)iconRenamerReceivedTap
+{
+	iconViewPressedWithTimestamp(self, CACurrentMediaTime());
+}
+
+%group UsingRecognizer
+
+- (id)initWithContentType:(NSUInteger)contentType
+{
+	if ((self = %orig())) {
+		UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(iconRenamerReceivedTap)];
+		[self addGestureRecognizer:recognizer];
+		[recognizer release];
+	}
+	return self;
+}
+
+
+%end
+
+%group UsingTouchEvents
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
@@ -219,23 +262,13 @@ static SBIconView *lastTapIconView;
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
 	if (inTap) {
-		SBIcon *icon = self.icon;
-		if ([icon isKindOfClass:%c(SBApplicationIcon)]) {
-			if ([[iconMappings objectForKey:@"IRRequiresDoubleTap"] boolValue]) {
-				UITouch *touch = [touches anyObject];
-				NSTimeInterval currentTapTime = touch.timestamp;
-				if ((currentTapTime - lastTapTime < 0.5) && (lastTapIconView == self))
-					[[IconRenamer renamerWithIcon:self.icon iconView:self] show];
-				[lastTapIconView autorelease];
-				lastTapIconView = [self retain];
-				lastTapTime = currentTapTime;
-			} else {
-				[currentRenamer ?: [IconRenamer renamerWithIcon:self.icon iconView:self] receiveTouch];
-			}
-		}
+		UITouch *touch = [touches anyObject];
+		iconViewPressedWithTimestamp(self, touch.timestamp);
 	}
 	%orig();
 }
+
+%end
 
 %end
 
@@ -259,6 +292,11 @@ static void LoadSettings()
 {
 	%init();
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	if ([%c(SBIconView) instancesRespondToSelector:@selector(initWithContentType:)]) {
+		%init(UsingRecognizer);
+	} else {
+		%init(UsingTouchEvents);
+	}
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)LoadSettings, CFSTR("ch.rpetri.iconrenamer/settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	LoadSettings();
 	[pool drain];
